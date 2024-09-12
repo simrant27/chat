@@ -1,3 +1,4 @@
+import 'package:chat/Pages/chat_page.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -11,20 +12,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.blue.shade200,
-        title: Text(
-          "Chats",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 26),
+        appBar: AppBar(
+          backgroundColor: Colors.blue.shade200,
+          title: Text(
+            "Chats",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 26),
+          ),
+          actions: [
+            IconButton(onPressed: () {}, icon: Icon(Icons.search)),
+          ],
         ),
-        actions: [
-          IconButton(onPressed: () {}, icon: Icon(Icons.search)),
-          IconButton(onPressed: () {}, icon: Icon(Icons.more_vert))
-        ],
-      ),
-      body: SafeArea(
-        child: Container(),
-      ),
-    );
+        body: ChatPage());
   }
 }
