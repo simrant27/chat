@@ -1,4 +1,4 @@
-import 'package:chat/Pages/individual_page.dart';
+import 'package:chat/Screens/individual_page.dart';
 import 'package:chat/models/chat_model.dart';
 import 'package:flutter/material.dart';
 
