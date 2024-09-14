@@ -1,5 +1,8 @@
+import 'package:chat/CustomUi/own_msg.dart';
+import 'package:chat/CustomUi/replycard.dart';
 import 'package:chat/models/chat_model.dart';
 import 'package:flutter/material.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class IndividualPage extends StatefulWidget {
   const IndividualPage({super.key, required this.chatModel});
@@ -10,6 +13,25 @@ class IndividualPage extends StatefulWidget {
 }
 
 class _IndividualPageState extends State<IndividualPage> {
+  late IO.Socket socket;
+
+  @override
+  void initState() {
+    super.initState();
+    connect();
+  }
+
+  void connect() {
+    socket = IO.io("http://192.168.18.121:5000", <String, dynamic>{
+      "transports": ["websocket"],
+      "autoConnect": false,
+    });
+    socket.connect();
+    socket.emit("/test", "Hello world");
+    socket.onConnect((data) => print("connected"));
+    print(socket.connected);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,7 +76,28 @@ class _IndividualPageState extends State<IndividualPage> {
         width: MediaQuery.of(context).size.width,
         child: Stack(
           children: [
-            ListView(),
+            Container(
+              height: MediaQuery.of(context).size.height - 140,
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  OwnMsgCard(),
+                  Replycard(),
+                  OwnMsgCard(),
+                  Replycard(),
+                  OwnMsgCard(),
+                  Replycard(),
+                  OwnMsgCard(),
+                  Replycard(),
+                  OwnMsgCard(),
+                  Replycard(),
+                  OwnMsgCard(),
+                  Replycard(),
+                  OwnMsgCard(),
+                  Replycard(),
+                ],
+              ),
+            ),
             Align(
               alignment: Alignment.bottomCenter,
               child: Row(
