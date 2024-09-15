@@ -14,6 +14,9 @@ class IndividualPage extends StatefulWidget {
 
 class _IndividualPageState extends State<IndividualPage> {
   late IO.Socket socket;
+  bool sendButton = false;
+
+  TextEditingController _controller = TextEditingController();
 
   @override
   void initState() {
@@ -112,10 +115,22 @@ class _IndividualPageState extends State<IndividualPage> {
                         borderRadius: BorderRadius.circular(25),
                       ),
                       child: TextFormField(
+                        controller: _controller,
                         textAlignVertical: TextAlignVertical.center,
                         keyboardType: TextInputType.multiline,
                         maxLines: 5,
                         minLines: 1,
+                        onChanged: (value) {
+                          if (value.length > 0) {
+                            setState(() {
+                              sendButton = true;
+                            });
+                          } else {
+                            setState(() {
+                              sendButton = false;
+                            });
+                          }
+                        },
                         decoration: InputDecoration(
                             hintText: "Type a message",
                             border: InputBorder.none,
@@ -143,7 +158,7 @@ class _IndividualPageState extends State<IndividualPage> {
                     child: CircleAvatar(
                       radius: 25,
                       child: IconButton(
-                        icon: Icon(Icons.mic),
+                        icon: Icon(sendButton ? Icons.send : Icons.mic),
                         onPressed: () {},
                       ),
                     ),
