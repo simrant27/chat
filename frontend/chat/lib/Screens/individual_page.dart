@@ -21,6 +21,7 @@ class _IndividualPageState extends State<IndividualPage> {
   List<MessageModel>? messages = [];
 
   TextEditingController _controller = TextEditingController();
+  ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -100,14 +101,20 @@ class _IndividualPageState extends State<IndividualPage> {
       body: Container(
         height: MediaQuery.of(context).size.height,
         width: MediaQuery.of(context).size.width,
-        child: Stack(
+        child: Column(
           children: [
-            Container(
-              height: MediaQuery.of(context).size.height - 140,
+            Expanded(
+              // height: MediaQuery.of(context).size.height - 140,
               child: ListView.builder(
+                controller: _scrollController,
                 shrinkWrap: true,
-                itemCount: messages!.length,
+                itemCount: messages!.length + 1,
                 itemBuilder: (context, index) {
+                  if (index == messages!.length) {
+                    return Container(
+                      height: 70,
+                    );
+                  }
                   if (messages![index].type == "source") {
                     return OwnMsgCard(
                       message: messages![index].message,
@@ -122,11 +129,12 @@ class _IndividualPageState extends State<IndividualPage> {
             ),
             Align(
               alignment: Alignment.bottomCenter,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      width: MediaQuery.of(context).size.width - 25,
+              child: Container(
+                height: 70,
+                child: Row(
+                  children: [
+                    Container(
+                      width: MediaQuery.of(context).size.width - 70,
                       margin: EdgeInsets.only(left: 10, right: 2, bottom: 10),
                       padding: EdgeInsets.only(left: 10),
                       decoration: BoxDecoration(
@@ -171,24 +179,28 @@ class _IndividualPageState extends State<IndividualPage> {
                             )),
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: CircleAvatar(
-                      radius: 25,
-                      child: IconButton(
-                        icon: Icon(sendButton ? Icons.send : Icons.mic),
-                        onPressed: () {
-                          if (sendButton) {
-                            sendMessage(_controller.text, widget.sourceChat.id!,
-                                widget.chatModel.id!);
-                            _controller.clear();
-                          }
-                        },
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: CircleAvatar(
+                        radius: 25,
+                        child: IconButton(
+                          icon: Icon(sendButton ? Icons.send : Icons.mic),
+                          onPressed: () {
+                            if (sendButton) {
+                              _scrollController.animateTo(
+                                  _scrollController.position.maxScrollExtent,
+                                  duration: Duration(milliseconds: 300),
+                                  curve: Curves.easeOut);
+                              sendMessage(_controller.text,
+                                  widget.sourceChat.id!, widget.chatModel.id!);
+                              _controller.clear();
+                            }
+                          },
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             )
           ],
