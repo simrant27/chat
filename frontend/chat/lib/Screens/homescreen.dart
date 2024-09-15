@@ -3,8 +3,10 @@ import 'package:chat/models/chat_model.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.chatmodels});
+  const HomeScreen(
+      {super.key, required this.chatmodels, required this.sourceChat});
   final List<ChatModel> chatmodels;
+  final ChatModel sourceChat;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -26,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         body: ChatPage(
           chatmodels: widget.chatmodels,
+          sourceChat: widget.sourceChat,
         ));
   }
 }

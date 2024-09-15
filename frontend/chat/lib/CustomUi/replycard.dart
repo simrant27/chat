@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class Replycard extends StatelessWidget {
-  const Replycard({super.key});
+  const Replycard({super.key, this.message});
+  final String? message;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +23,7 @@ class Replycard extends StatelessWidget {
                 padding: const EdgeInsets.only(
                     left: 10, right: 40, top: 5, bottom: 20),
                 child: Text(
-                  "hey ",
+                  message!,
                   style: TextStyle(fontSize: 16),
                 ),
               ),

@@ -1,12 +1,15 @@
 import 'package:chat/CustomUi/own_msg.dart';
 import 'package:chat/CustomUi/replycard.dart';
 import 'package:chat/models/chat_model.dart';
+import 'package:chat/models/message_model.dart';
 import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class IndividualPage extends StatefulWidget {
-  const IndividualPage({super.key, required this.chatModel});
+  const IndividualPage(
+      {super.key, required this.chatModel, required this.sourceChat});
   final ChatModel chatModel;
+  final ChatModel sourceChat;
 
   @override
   State<IndividualPage> createState() => _IndividualPageState();
@@ -15,6 +18,7 @@ class IndividualPage extends StatefulWidget {
 class _IndividualPageState extends State<IndividualPage> {
   late IO.Socket socket;
   bool sendButton = false;
+  List<MessageModel>? messages = [];
 
   TextEditingController _controller = TextEditingController();
 
@@ -30,9 +34,28 @@ class _IndividualPageState extends State<IndividualPage> {
       "autoConnect": false,
     });
     socket.connect();
-    socket.emit("/test", "Hello world");
-    socket.onConnect((data) => print("connected"));
+    socket.emit("signin", widget.sourceChat.id);
+    socket.onConnect((data) {
+      print("connected");
+      socket.on("message", (msg) {
+        print(msg);
+        setMessage("destination", msg["message"]);
+      });
+    });
     print(socket.connected);
+  }
+
+  void sendMessage(String message, int sourceId, int targetId) {
+    setMessage("source", message);
+    socket.emit("message",
+        {"message": message, "sourceId": sourceId, "targetId": targetId});
+  }
+
+  void setMessage(String type, String message) {
+    MessageModel messageModel = MessageModel(type: type, message: message);
+    setState(() {
+      messages!.add(messageModel);
+    });
   }
 
   @override
@@ -66,7 +89,7 @@ class _IndividualPageState extends State<IndividualPage> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.chatModel.name!, style: TextStyle(fontSize: 18.5)),
+            Text(widget.chatModel.name, style: TextStyle(fontSize: 18.5)),
             Text(
               "Last seen at 18:06",
               style: TextStyle(fontSize: 13),
@@ -81,24 +104,20 @@ class _IndividualPageState extends State<IndividualPage> {
           children: [
             Container(
               height: MediaQuery.of(context).size.height - 140,
-              child: ListView(
+              child: ListView.builder(
                 shrinkWrap: true,
-                children: [
-                  OwnMsgCard(),
-                  Replycard(),
-                  OwnMsgCard(),
-                  Replycard(),
-                  OwnMsgCard(),
-                  Replycard(),
-                  OwnMsgCard(),
-                  Replycard(),
-                  OwnMsgCard(),
-                  Replycard(),
-                  OwnMsgCard(),
-                  Replycard(),
-                  OwnMsgCard(),
-                  Replycard(),
-                ],
+                itemCount: messages!.length,
+                itemBuilder: (context, index) {
+                  if (messages![index].type == "source") {
+                    return OwnMsgCard(
+                      message: messages![index].message,
+                    );
+                  } else {
+                    return Replycard(
+                      message: messages![index].message,
+                    );
+                  }
+                },
               ),
             ),
             Align(
@@ -159,7 +178,13 @@ class _IndividualPageState extends State<IndividualPage> {
                       radius: 25,
                       child: IconButton(
                         icon: Icon(sendButton ? Icons.send : Icons.mic),
-                        onPressed: () {},
+                        onPressed: () {
+                          if (sendButton) {
+                            sendMessage(_controller.text, widget.sourceChat.id!,
+                                widget.chatModel.id!);
+                            _controller.clear();
+                          }
+                        },
                       ),
                     ),
                   ),

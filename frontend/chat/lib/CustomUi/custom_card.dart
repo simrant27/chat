@@ -3,8 +3,10 @@ import 'package:chat/models/chat_model.dart';
 import 'package:flutter/material.dart';
 
 class CustomCard extends StatelessWidget {
-  const CustomCard({super.key, required this.chatModel});
+  const CustomCard(
+      {super.key, required this.chatModel, required this.sourceChat});
   final ChatModel chatModel;
+  final ChatModel sourceChat;
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -14,6 +16,7 @@ class CustomCard extends StatelessWidget {
             MaterialPageRoute(
                 builder: (context) => IndividualPage(
                       chatModel: chatModel,
+                      sourceChat: sourceChat,
                     )));
       },
       child: Column(
