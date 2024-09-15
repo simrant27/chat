@@ -1,8 +1,10 @@
 import 'package:chat/Pages/chat_page.dart';
+import 'package:chat/models/chat_model.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, required this.chatmodels});
+  final List<ChatModel> chatmodels;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -22,6 +24,8 @@ class _HomeScreenState extends State<HomeScreen> {
             IconButton(onPressed: () {}, icon: Icon(Icons.search)),
           ],
         ),
-        body: ChatPage());
+        body: ChatPage(
+          chatmodels: widget.chatmodels,
+        ));
   }
 }

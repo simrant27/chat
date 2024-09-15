@@ -36,7 +36,10 @@ class _SelectContactState extends State<SelectContact> {
           itemCount: contacts.length + 1,
           itemBuilder: (context, index) {
             if (index == 0) {
-              return ButtonCard();
+              return ButtonCard(
+                name: "Create group",
+                icon: Icons.group,
+              );
             }
             return ContactCard(
               contact: contacts[index - 1],

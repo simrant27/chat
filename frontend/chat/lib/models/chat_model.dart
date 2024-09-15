@@ -3,12 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
 class ChatModel {
-  String? name;
+  String name;
   IconData? icon;
   bool? isGroup;
   String? time;
   String? currentMessage;
+  int? id;
 
   ChatModel(
-      {this.name, this.icon, this.isGroup, this.time, this.currentMessage});
+      {required this.name,
+      this.icon,
+      this.isGroup,
+      this.time,
+      this.currentMessage,
+      this.id});
 }

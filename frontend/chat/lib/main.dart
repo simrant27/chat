@@ -1,4 +1,5 @@
 import 'package:chat/Screens/homescreen.dart';
+import 'package:chat/Screens/login_screnn.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -17,7 +18,7 @@ class MyApp extends StatelessWidget {
         colorScheme:
             ColorScheme.fromSeed(seedColor: Color.fromARGB(255, 4, 136, 243)),
       ),
-      home: HomeScreen(),
+      home: LoginScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
