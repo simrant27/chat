@@ -40,6 +40,8 @@ class _IndividualPageState extends State<IndividualPage> {
       print("connected");
       socket.on("message", (msg) {
         print(msg);
+        _scrollController.animateTo(_scrollController.position.maxScrollExtent,
+            duration: Duration(milliseconds: 300), curve: Curves.easeOut);
         setMessage("destination", msg["message"]);
       });
     });
@@ -53,7 +55,10 @@ class _IndividualPageState extends State<IndividualPage> {
   }
 
   void setMessage(String type, String message) {
-    MessageModel messageModel = MessageModel(type: type, message: message);
+    MessageModel messageModel = MessageModel(
+        type: type,
+        message: message,
+        time: DateTime.now().toString().substring(10, 16));
     setState(() {
       messages!.add(messageModel);
     });
@@ -118,10 +123,12 @@ class _IndividualPageState extends State<IndividualPage> {
                   if (messages![index].type == "source") {
                     return OwnMsgCard(
                       message: messages![index].message,
+                      time: messages![index].time,
                     );
                   } else {
                     return Replycard(
                       message: messages![index].message,
+                      time: messages![index].time,
                     );
                   }
                 },
@@ -194,6 +201,9 @@ class _IndividualPageState extends State<IndividualPage> {
                               sendMessage(_controller.text,
                                   widget.sourceChat.id!, widget.chatModel.id!);
                               _controller.clear();
+                              setState(() {
+                                sendButton = false;
+                              });
                             }
                           },
                         ),

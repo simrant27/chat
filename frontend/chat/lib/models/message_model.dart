@@ -2,5 +2,6 @@ class MessageModel {
   String?
       type; // source or destination if type is source align in righside otherwise left side
   String? message;
-  MessageModel({this.type, this.message});
+  String? time;
+  MessageModel({this.type, this.message, this.time});
 }
