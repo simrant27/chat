@@ -51,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
           itemBuilder: (context, index) => InkWell(
                 onTap: () {
                   sourceChat = chatmodels.removeAt(index);
-                  Navigator.push(
+                  Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
                           builder: (context) => HomeScreen(

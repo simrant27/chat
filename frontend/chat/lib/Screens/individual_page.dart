@@ -4,6 +4,8 @@ import 'package:chat/models/chat_model.dart';
 import 'package:chat/models/message_model.dart';
 import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class IndividualPage extends StatefulWidget {
   const IndividualPage(
@@ -17,7 +19,7 @@ class IndividualPage extends StatefulWidget {
 
 class _IndividualPageState extends State<IndividualPage> {
   late IO.Socket socket;
-  bool sendButton = false;
+
   List<MessageModel>? messages = [];
 
   TextEditingController _controller = TextEditingController();
@@ -30,14 +32,16 @@ class _IndividualPageState extends State<IndividualPage> {
   }
 
   void connect() {
-    socket = IO.io("http://192.168.18.121:5000", <String, dynamic>{
+    socket = IO.io("http://192.168.18.121:3000", <String, dynamic>{
       "transports": ["websocket"],
       "autoConnect": false,
     });
     socket.connect();
-    socket.emit("signin", widget.sourceChat.id);
+    socket.emit("/test", "hello world");
+
     socket.onConnect((data) {
       print("connected");
+      socket.emit("signin", widget.sourceChat.id);
       socket.on("message", (msg) {
         print(msg);
         _scrollController.animateTo(_scrollController.position.maxScrollExtent,
@@ -45,6 +49,7 @@ class _IndividualPageState extends State<IndividualPage> {
         setMessage("destination", msg["message"]);
       });
     });
+
     print(socket.connected);
   }
 
@@ -154,17 +159,6 @@ class _IndividualPageState extends State<IndividualPage> {
                         keyboardType: TextInputType.multiline,
                         maxLines: 5,
                         minLines: 1,
-                        onChanged: (value) {
-                          if (value.length > 0) {
-                            setState(() {
-                              sendButton = true;
-                            });
-                          } else {
-                            setState(() {
-                              sendButton = false;
-                            });
-                          }
-                        },
                         decoration: InputDecoration(
                             hintText: "Type a message",
                             border: InputBorder.none,
@@ -191,20 +185,15 @@ class _IndividualPageState extends State<IndividualPage> {
                       child: CircleAvatar(
                         radius: 25,
                         child: IconButton(
-                          icon: Icon(sendButton ? Icons.send : Icons.mic),
+                          icon: Icon(Icons.send),
                           onPressed: () {
-                            if (sendButton) {
-                              _scrollController.animateTo(
-                                  _scrollController.position.maxScrollExtent,
-                                  duration: Duration(milliseconds: 300),
-                                  curve: Curves.easeOut);
-                              sendMessage(_controller.text,
-                                  widget.sourceChat.id!, widget.chatModel.id!);
-                              _controller.clear();
-                              setState(() {
-                                sendButton = false;
-                              });
-                            }
+                            _scrollController.animateTo(
+                                _scrollController.position.maxScrollExtent,
+                                duration: Duration(milliseconds: 300),
+                                curve: Curves.easeOut);
+                            sendMessage(_controller.text, widget.sourceChat.id!,
+                                widget.chatModel.id!);
+                            _controller.clear();
                           },
                         ),
                       ),
