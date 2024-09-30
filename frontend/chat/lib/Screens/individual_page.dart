@@ -4,8 +4,9 @@ import 'package:chat/models/chat_model.dart';
 import 'package:chat/models/message_model.dart';
 import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 
 class IndividualPage extends StatefulWidget {
   const IndividualPage(
@@ -19,54 +20,116 @@ class IndividualPage extends StatefulWidget {
 
 class _IndividualPageState extends State<IndividualPage> {
   late IO.Socket socket;
-
-  List<MessageModel>? messages = [];
-
+  List<MessageModel> messages = [];
   TextEditingController _controller = TextEditingController();
   ScrollController _scrollController = ScrollController();
+
+  StreamSubscription? _subscription;
 
   @override
   void initState() {
     super.initState();
     connect();
+    loadMessages(); // Load messages from MongoDB on initialization
   }
 
   void connect() {
-    socket = IO.io("http://192.168.18.121:3000", <String, dynamic>{
+    socket = IO.io("http://192.168.18.56:3000", <String, dynamic>{
       "transports": ["websocket"],
       "autoConnect": false,
     });
+
     socket.connect();
-    socket.emit("/test", "hello world");
 
     socket.onConnect((data) {
+      // print('Connected to myNamespace');
       print("connected");
+
+      // Emit signin with the current user's ID
       socket.emit("signin", widget.sourceChat.id);
+
+      // Remove any existing message listener to prevent duplicates
+      socket.off("message");
+
+      // Add new listener for incoming messages
       socket.on("message", (msg) {
-        print(msg);
-        _scrollController.animateTo(_scrollController.position.maxScrollExtent,
-            duration: Duration(milliseconds: 300), curve: Curves.easeOut);
-        setMessage("destination", msg["message"]);
+        print("Message received: $msg");
+        if (mounted) {
+          setState(() {
+            // Add the received message to the list
+            messages.add(MessageModel(
+              type:
+                  "destination", // Assuming "destination" for received messages
+              message: msg["message"],
+              time: DateTime.now().toString().substring(10, 16),
+            ));
+          });
+
+          if (mounted) {
+            Future.delayed(Duration.zero, () {
+              _scrollController.animateTo(
+                _scrollController.position.maxScrollExtent,
+                duration: Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            });
+          }
+        }
       });
     });
 
-    print(socket.connected);
+    // Listen for disconnection
+    socket.onDisconnect((_) {
+      print("Disconnected from socket");
+    });
   }
 
-  void sendMessage(String message, int sourceId, int targetId) {
+  Future<void> loadMessages() async {
+    final response = await http.get(Uri.parse(
+        'http://192.168.18.121:3000/messages/${widget.sourceChat.id}/${widget.chatModel.id}'));
+
+    if (response.statusCode == 200) {
+      List<dynamic> messageList = jsonDecode(response.body);
+      setState(() {
+        messages =
+            messageList.map((msg) => MessageModel.fromJson(msg)).toList();
+      });
+    }
+  }
+
+  void sendMessage(String message, String sourceId, String targetId) {
     setMessage("source", message);
     socket.emit("message",
         {"message": message, "sourceId": sourceId, "targetId": targetId});
+
+    // Save message to MongoDB
+    http.post(
+      Uri.parse('http://192.168.18.121:3000/messages'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'message': message,
+        'type': 'source',
+        'time': DateTime.now().toString().substring(10, 16),
+        'sourceId': sourceId,
+        'targetId': targetId,
+      }),
+    );
   }
 
   void setMessage(String type, String message) {
     MessageModel messageModel = MessageModel(
-        type: type,
-        message: message,
-        time: DateTime.now().toString().substring(10, 16));
-    setState(() {
-      messages!.add(messageModel);
-    });
+      type: type,
+      message: message,
+      time: DateTime.now().toString().substring(10, 16),
+    );
+
+    if (mounted) {
+      setState(() {
+        messages.add(messageModel);
+      });
+    }
   }
 
   @override
@@ -83,10 +146,7 @@ class _IndividualPageState extends State<IndividualPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Icon(
-                Icons.arrow_back,
-                size: 24,
-              ),
+              Icon(Icons.arrow_back, size: 24),
               CircleAvatar(
                 child: widget.chatModel.isGroup!
                     ? Icon(Icons.group)
@@ -101,10 +161,7 @@ class _IndividualPageState extends State<IndividualPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(widget.chatModel.name, style: TextStyle(fontSize: 18.5)),
-            Text(
-              "Last seen at 18:06",
-              style: TextStyle(fontSize: 13),
-            )
+            Text("Last seen at 18:06", style: TextStyle(fontSize: 13))
           ],
         ),
       ),
@@ -114,26 +171,23 @@ class _IndividualPageState extends State<IndividualPage> {
         child: Column(
           children: [
             Expanded(
-              // height: MediaQuery.of(context).size.height - 140,
               child: ListView.builder(
                 controller: _scrollController,
                 shrinkWrap: true,
-                itemCount: messages!.length + 1,
+                itemCount: messages.length + 1,
                 itemBuilder: (context, index) {
-                  if (index == messages!.length) {
-                    return Container(
-                      height: 70,
-                    );
+                  if (index == messages.length) {
+                    return Container(height: 70);
                   }
-                  if (messages![index].type == "source") {
+                  if (messages[index].type == "source") {
                     return OwnMsgCard(
-                      message: messages![index].message,
-                      time: messages![index].time,
+                      message: messages[index].message,
+                      time: messages[index].time,
                     );
                   } else {
                     return Replycard(
-                      message: messages![index].message,
-                      time: messages![index].time,
+                      message: messages[index].message,
+                      time: messages[index].time,
                     );
                   }
                 },
@@ -160,24 +214,31 @@ class _IndividualPageState extends State<IndividualPage> {
                         maxLines: 5,
                         minLines: 1,
                         decoration: InputDecoration(
-                            hintText: "Type a message",
-                            border: InputBorder.none,
-                            suffixIcon: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                    onPressed: () {
-                                      showModalBottomSheet(
-                                          backgroundColor: Colors.transparent,
-                                          context: context,
-                                          builder: (builder) => bottomsheet());
-                                    },
-                                    icon: Icon(Icons.attach_file)),
-                                IconButton(
-                                    onPressed: () {},
-                                    icon: Icon(Icons.camera_alt)),
-                              ],
-                            )),
+                          hintText: "Type a message",
+                          border: InputBorder.none,
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  // Attach file functionality can go here
+                                  showModalBottomSheet(
+                                    backgroundColor: Colors.transparent,
+                                    context: context,
+                                    builder: (builder) => bottomsheet(),
+                                  );
+                                },
+                                icon: Icon(Icons.attach_file),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  // Camera functionality can go here
+                                },
+                                icon: Icon(Icons.camera_alt),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                     Padding(
@@ -188,11 +249,14 @@ class _IndividualPageState extends State<IndividualPage> {
                           icon: Icon(Icons.send),
                           onPressed: () {
                             _scrollController.animateTo(
-                                _scrollController.position.maxScrollExtent,
-                                duration: Duration(milliseconds: 300),
-                                curve: Curves.easeOut);
-                            sendMessage(_controller.text, widget.sourceChat.id!,
-                                widget.chatModel.id!);
+                              _scrollController.position.maxScrollExtent,
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeOut,
+                            );
+                            sendMessage(
+                                _controller.text,
+                                widget.sourceChat.id.toString(),
+                                widget.chatModel.id.toString());
                             _controller.clear();
                           },
                         ),
@@ -201,7 +265,7 @@ class _IndividualPageState extends State<IndividualPage> {
                   ],
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -210,39 +274,21 @@ class _IndividualPageState extends State<IndividualPage> {
 
   Widget bottomsheet() {
     return Container(
-      height: 140,
-      width: MediaQuery.of(context).size.width,
-      child: Card(
-        margin: EdgeInsets.all(18),
-        child: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              iconcreation(Icons.insert_drive_file, Colors.indigo, "Document"),
-              iconcreation(Icons.camera_alt, Colors.pink, "Camera"),
-              iconcreation(Icons.insert_photo, Colors.purple, "Gallery"),
-            ],
+      height: 200,
+      color: Colors.white,
+      child: Column(
+        children: [
+          // Add bottom sheet content here
+          ListTile(
+            leading: Icon(Icons.insert_photo),
+            title: Text("Photo"),
           ),
-        ),
+          ListTile(
+            leading: Icon(Icons.file_copy),
+            title: Text("File"),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget iconcreation(IconData icon, Color color, String text) {
-    return Column(
-      children: [
-        CircleAvatar(
-          backgroundColor: color,
-          radius: 30,
-          child: Icon(
-            color: Colors.white,
-            icon,
-            size: 29,
-          ),
-        ),
-        Text(text),
-      ],
     );
   }
 }
