@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Socket.io Chat Test</title>
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+  </head>
+  <body>
+    <h1>Socket.io Chat Test</h1>
+    <script>
+      const socket = io("http://localhost:3000");
+
+      socket.on("connect", () => {
+        console.log("connected", socket.id);
+        // Sign in
+        socket.emit("signin", "user2"); // Change user ID as needed
+      });
+
+      socket.on("message", (msg) => {
+        console.log("Message received:", msg);
+      });
+
+      // Send a test message
+      socket.emit("message", {
+        senderId: "user1",
+        targetId: "user2",
+        text: "Hello from User 2!",
+      });
+    </script>
+    <button onclick="sendMessage()">Send Message to User 1</button>
+
+    <script>
+      function sendMessage() {
+        const message = {
+          senderId: "user2",
+          targetId: "user1",
+          text: "Hello from User 2!",
+        };
+        socket.emit("message", message);
+      }
+    </script>
+  </body>
+</html>
